@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/Header";
-import { Container, Sidebar, Content } from './style';
+import { Container, Sidebar, Content } from "./style";
+import GenerateCertificate from "../../components/GenerateCertificate";
 import api from "../../services/api";
 
 export default function AdminPanel() {
   const navigate = useNavigate();
-  const [view, setView] = useState("");
   const [funcionarios, setFuncionarios] = useState([]);
+  const [sidebarSelected, setSidebarSelected] = useState("funcionarios");
 
   useEffect(() => {
     const userData = localStorage.getItem("usuario");
@@ -24,19 +25,23 @@ export default function AdminPanel() {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    if (sidebarSelected === "funcionarios") {
+      async function fetchFuncionarios() {
+        try {
+          const response = await api.get("/funcionarios");
+          setFuncionarios(response.data);
+        } catch (error) {
+          console.error("Erro ao carregar funcionários:", error);
+        }
+      }
+      fetchFuncionarios();
+    }
+  }, [sidebarSelected]);
+
   const handleLogout = () => {
     localStorage.removeItem("usuario");
     navigate("/login");
-  };
-
-  const carregarFuncionarios = async () => {
-    try {
-      const response = await api.get("/funcionarios");
-      setFuncionarios(response.data);
-      setView("funcionarios");
-    } catch (err) {
-      console.error("Erro ao carregar funcionários:", err);
-    }
   };
 
   return (
@@ -45,31 +50,53 @@ export default function AdminPanel() {
       <Container>
         <Sidebar>
           <ul>
-            <li><button onClick={carregarFuncionarios}>Funcionários</button></li>
-            <li><button onClick={() => setView("certificados")}>Certificados</button></li>
-            <li><button onClick={() => setView("administradores")}>Gerenciar Administradores</button></li>
+            <li
+              style={{ cursor: "pointer", fontWeight: sidebarSelected === "funcionarios" ? "bold" : "normal" }}
+              onClick={() => setSidebarSelected("funcionarios")}
+            >
+              Funcionários
+            </li>
+            <li
+              style={{ cursor: "pointer", fontWeight: sidebarSelected === "certificados" ? "bold" : "normal" }}
+              onClick={() => setSidebarSelected("certificados")}
+            >
+              Certificados
+            </li>
+            <li
+              style={{ cursor: "pointer", fontWeight: sidebarSelected === "administradores" ? "bold" : "normal" }}
+              onClick={() => setSidebarSelected("administradores")}
+            >
+              Gerenciar Administradores
+            </li>
           </ul>
         </Sidebar>
         <Content>
-          {view === "funcionarios" && (
+          {sidebarSelected === "funcionarios" && (
             <>
               <h2>Funcionários</h2>
               <table>
                 <thead>
                   <tr>
-                    <th>ID</th>
                     <th>Nome</th>
                     <th>Username</th>
-                    <th>Admin</th>
+                    <th>Administrador</th>
+                    <th>Ativo</th>
+                    <th>Gerar Certificado</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {funcionarios.map((f) => (
-                    <tr key={f.id}>
-                      <td>{f.id}</td>
-                      <td>{f.nome}</td>
-                      <td>{f.username}</td>
-                      <td>{f.administrador ? "Sim" : "Não"}</td>
+                  {funcionarios.map((funcionario) => (
+                    <tr key={funcionario.id}>
+                      <td>{funcionario.nome}</td>
+                      <td>{funcionario.username}</td>
+                      <td>{funcionario.administrador ? "Sim" : "Não"}</td>
+                      <td>{funcionario.ativo ? "Sim" : "Não"}</td>
+                      <td>
+                        <GenerateCertificate
+                          funcionarioId={funcionario.id}
+                          username={funcionario.username}
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -77,24 +104,17 @@ export default function AdminPanel() {
             </>
           )}
 
-          {view === "certificados" && (
+          {sidebarSelected === "certificados" && (
             <>
               <h2>Certificados</h2>
-              <p>Em breve: gerenciamento de certificados.</p>
+              <p>Aqui poderá listar os certificados (implemente depois).</p>
             </>
           )}
 
-          {view === "administradores" && (
+          {sidebarSelected === "administradores" && (
             <>
               <h2>Gerenciar Administradores</h2>
-              <p>Em breve: promover e revogar acessos.</p>
-            </>
-          )}
-
-          {!view && (
-            <>
-              <h2>Bem-vindo, Administrador</h2>
-              <p>Escolha uma opção no menu à esquerda.</p>
+              <p>Aqui poderá gerenciar os administradores (implemente depois).</p>
             </>
           )}
         </Content>
